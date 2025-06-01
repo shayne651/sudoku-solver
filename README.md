@@ -5,7 +5,8 @@ One of either go or docker will be required depending if you want to build and r
 * [Go](https://go.dev/dl/) (If you want to build the code and run it)
 * [Docker](https://docs.docker.com/get-started/get-docker/) (If you just want to run it)
 
-### Build and run
+
+## Build and run
 
 1. Go has been installed
 
@@ -43,7 +44,9 @@ go run ./cmd/sudoku-solver/main.go
 
 ```
 
-### Run the pre-built code
+
+
+## Run the pre-built code
 
 1. Docker has been installed
 
