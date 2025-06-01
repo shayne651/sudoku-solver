@@ -8,13 +8,13 @@ import (
 )
 
 func validateRow(puzzle [][]int, r int, errorOnZeros bool) bool {
-	usedMap := make(map[int]int)
+	usedMap := make(map[int]bool)
 	for i := range puzzle[r] {
 		if puzzle[r][i] > 0 && puzzle[r][i] <= 9 {
-			usedMap[puzzle[r][i]] += 1
-			if usedMap[puzzle[r][i]] > 1 {
+			if usedMap[puzzle[r][i]] {
 				return false
 			}
+			usedMap[puzzle[r][i]] = true
 		} else if errorOnZeros && puzzle[r][i] == 0 {
 			return false
 		}
@@ -23,13 +23,13 @@ func validateRow(puzzle [][]int, r int, errorOnZeros bool) bool {
 }
 
 func validateCol(puzzle [][]int, c int, errorOnZeros bool) bool {
-	usedMap := make(map[int]int)
+	usedMap := make(map[int]bool)
 	for i := range 9 {
 		if puzzle[i][c] > 0 && puzzle[i][c] <= 9 {
-			usedMap[puzzle[i][c]] += 1
-			if usedMap[puzzle[i][c]] > 1 {
+			if usedMap[puzzle[i][c]] {
 				return false
 			}
+			usedMap[puzzle[i][c]] = true
 		} else if errorOnZeros && puzzle[i][c] == 0 {
 			return false
 		}
@@ -40,15 +40,15 @@ func validateCol(puzzle [][]int, c int, errorOnZeros bool) bool {
 func validateSubGrid(puzzle [][]int, col, row int, errorOnZeros bool) bool {
 	colStart := col - (col % 3)
 	rowStart := row - (row % 3)
-	usedMap := make(map[int]int)
+	usedMap := make(map[int]bool)
 
 	for i := range 3 {
 		for j := range 3 {
 			if puzzle[i+rowStart][j+colStart] > 0 && puzzle[i+rowStart][j+colStart] <= 9 {
-				usedMap[puzzle[i+rowStart][j+colStart]] += 1
-				if usedMap[puzzle[i+rowStart][j+colStart]] > 1 {
+				if usedMap[puzzle[i+rowStart][j+colStart]] {
 					return false
 				}
+				usedMap[puzzle[i+rowStart][j+colStart]] = true
 			} else if errorOnZeros && puzzle[i+rowStart][j+colStart] == 0 {
 				return false
 			}
@@ -58,9 +58,9 @@ func validateSubGrid(puzzle [][]int, col, row int, errorOnZeros bool) bool {
 }
 
 func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
-	usedColsMap := make(map[int]int)
-	usedRowMap := make(map[int]int)
-	usedGridMap := make(map[int]int)
+	usedColsMap := make(map[int]bool)
+	usedRowMap := make(map[int]bool)
+	usedGridMap := make(map[int]bool)
 
 	row := puzzle[rowIndex]
 	col := getCol(colIndex, puzzle)
@@ -70,17 +70,17 @@ func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
 
 	for i := range 3 {
 		for j := range 3 {
-			usedGridMap[puzzle[i+rowStart][j+colStart]] += 1
+			usedGridMap[puzzle[i+rowStart][j+colStart]] = true
 		}
 	}
 	for i := range 9 {
 
-		usedColsMap[col[i]] += 1
-		usedRowMap[row[i]] += 1
+		usedColsMap[col[i]] = true
+		usedRowMap[row[i]] = true
 	}
 	var validNumbers []int
 	for i := range 10 {
-		if i > 0 && usedColsMap[i] == 0 && usedRowMap[i] == 0 && usedGridMap[i] == 0 {
+		if i > 0 && !usedColsMap[i] && !usedRowMap[i] && !usedGridMap[i] {
 			validNumbers = append(validNumbers, i)
 		}
 	}
