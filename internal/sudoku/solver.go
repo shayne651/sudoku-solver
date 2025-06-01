@@ -1,10 +1,12 @@
 package sudoku
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 func getCol(colNum int, puzzle [][]int) []int {
@@ -45,10 +47,28 @@ func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
 
 	return validNumbers
 }
+func isSolved(puzzle [][]int) bool {
+	for i := 0; i < 9; i++ {
+		if !validateRow(puzzle, i, true) || !validateCol(puzzle, i, true) {
+			return false
+		}
+	}
+	for i := 0; i < 9; i += 3 {
+		for j := 0; j < 9; j += 3 {
+			if !validateSubGrid(puzzle, j, i, true) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 func recurseBacktrack(puzzle [][]int, row, col int) [][]int {
 	if row == 9 {
-		return puzzle
+		if isSolved(puzzle) {
+			return puzzle
+		}
+		return nil
 	}
 
 	nextRow, nextCol := row, col+1
@@ -114,26 +134,77 @@ func SolvePuzzle() ([][]int, error) {
 		return nil, puzzleValidityError
 	}
 
-	// var firstZeroRow, firstZeroCol int
-	// zeroFound := false
+	var firstZeroRow, firstZeroCol int
+	zeroFound := false
 
-	// for i := range 9 {
-	// 	for j := range 9 {
-	// 		if puzzle[i][j] == 0 {
-	// 			firstZeroRow, firstZeroCol = i, j
-	// 			zeroFound = true
-	// 		}
-	// 	}
-	// }
+	for i := range 9 {
+		for j := range 9 {
+			if puzzle[i][j] == 0 {
+				firstZeroRow, firstZeroCol = i, j
+				zeroFound = true
+				break
+			}
+		}
+		if zeroFound {
+			break
+		}
+	}
 
-	// if !zeroFound {
-	// 	return puzzle, nil
-	// }
+	if !zeroFound {
+		return puzzle, nil
+	}
 
-	// validValues := findMissingValues(puzzle, firstZeroCol, firstZeroRow)
+	validValues := findMissingValues(puzzle, firstZeroRow, firstZeroCol)
 
-	// ctx,
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	solved := recurseBacktrack(puzzle, 0, 0)
-	return solved, nil
+	var wg sync.WaitGroup
+	solutionChan := make(chan [][]int, 1)
+	var once sync.Once
+
+	nextRow, nextCol := firstZeroRow, firstZeroCol+1
+	if firstZeroCol == 8 {
+		nextRow++
+		nextCol = 0
+	}
+
+	for _, validValue := range validValues {
+		wg.Add(1)
+		go func(validValue int) {
+			newPuzzle := make([][]int, 9)
+			for i := 0; i < 9; i++ {
+				newPuzzle[i] = make([]int, 9)
+				copy(newPuzzle[i], puzzle[i])
+			}
+			newPuzzle[firstZeroRow][firstZeroCol] = validValue
+			solution := recurseBacktrack(newPuzzle, nextRow, nextCol)
+			if solution != nil {
+				once.Do(func() {
+					solutionChan <- solution
+				})
+			}
+			wg.Done()
+		}(validValue)
+
+	}
+
+	wg.Wait()
+	close(solutionChan)
+	var solution [][]int
+	select {
+	case solution = <-solutionChan:
+		return solution, nil
+	case <-ctx.Done():
+		return nil, nil
+	}
+}
+
+func deepCopy(puzzle [][]int) [][]int {
+	copyPuzzle := make([][]int, 9)
+	for i := 0; i < 9; i++ {
+		copyPuzzle[i] = make([]int, 9)
+		copy(copyPuzzle[i], puzzle[i])
+	}
+	return copyPuzzle
 }
