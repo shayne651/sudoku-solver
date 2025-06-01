@@ -1,0 +1,6 @@
+services:
+  sudoku-solver:
+    container_name: sudoku-solver
+    image: shayne651/sudoku-solver:latest
+    volumes:
+      - ../puzzle.json:/src/puzzle.json
