@@ -85,13 +85,8 @@ func recurseBacktrack(puzzle [][]int, row, col int) [][]int {
 	for _, val := range validValues {
 		puzzle[row][col] = val
 
-		if validateRow(puzzle, row, false) &&
-			validateCol(puzzle, col, false) &&
-			validateSubGrid(puzzle, col, row, false) {
-
-			if solved := recurseBacktrack(puzzle, nextRow, nextCol); solved != nil {
-				return solved
-			}
+		if solved := recurseBacktrack(puzzle, nextRow, nextCol); solved != nil {
+			return solved
 		}
 
 		puzzle[row][col] = 0
