@@ -1,6 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+)
 
 func validateRow(puzzle [][]int, r int, errorOnZeros bool) bool {
 	usedMap := make(map[int]int)
@@ -157,17 +162,32 @@ func solvePuzzle(puzzle [][]int, row, col int) ([][]int, error) {
 	return solved, nil
 }
 
+func getPuzzleFromFile() ([][]int, error) {
+	file, err := os.Open("puzzle.json")
+	if err != nil {
+		fmt.Println("Error opening puzzle file", err)
+		return nil, err
+	}
+
+	defer file.Close()
+	bytes, _ := io.ReadAll(file)
+
+	var puzzle [][]int
+
+	err = json.Unmarshal(bytes, &puzzle)
+	if err != nil {
+		fmt.Println("Error unmarshaling puzzle", err)
+		return nil, err
+	}
+
+	return puzzle, nil
+}
+
 func main() {
-	puzzle := [][]int{
-		{0, 0, 0, 7, 8, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 5, 6, 9},
-		{0, 0, 4, 0, 5, 6, 0, 0, 2},
-		{0, 3, 0, 0, 7, 0, 0, 0, 0},
-		{6, 2, 0, 9, 0, 4, 0, 0, 0},
-		{0, 0, 9, 2, 0, 0, 0, 1, 0},
-		{0, 0, 0, 0, 0, 0, 8, 4, 1},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{2, 8, 0, 0, 0, 5, 0, 0, 0},
+	puzzle, err := getPuzzleFromFile()
+
+	if err != nil {
+		return
 	}
 
 	solved, err := solvePuzzle(puzzle, 0, 0)
@@ -183,5 +203,4 @@ func main() {
 	} else if err == nil && solved == nil {
 		fmt.Println("No solution found.")
 	}
-
 }
