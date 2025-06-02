@@ -18,6 +18,7 @@ func getCol(colNum int, puzzle [][]int) []int {
 }
 
 func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
+	// tracks if numbers have been used in the row, column, subgrid
 	usedColsMap := make(map[int]bool)
 	usedRowMap := make(map[int]bool)
 	usedGridMap := make(map[int]bool)
@@ -39,6 +40,7 @@ func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
 		usedRowMap[row[i]] = true
 	}
 	var validNumbers []int
+	// If they have not been used they are valid
 	for i := range 10 {
 		if i > 0 && !usedColsMap[i] && !usedRowMap[i] && !usedGridMap[i] {
 			validNumbers = append(validNumbers, i)
@@ -111,6 +113,7 @@ func SolvePuzzle() ([][]int, error) {
 		return nil, puzzleValidityError
 	}
 
+	// Locate starting position
 	var firstZeroRow, firstZeroCol int
 	zeroFound := false
 
@@ -146,6 +149,8 @@ func SolvePuzzle() ([][]int, error) {
 		nextCol = 0
 	}
 
+	// Start a goroutine for each valid starting value
+	// Each routine will preform backtracking
 	for _, validValue := range validValues {
 		wg.Add(1)
 		go func(validValue int) {
@@ -162,6 +167,8 @@ func SolvePuzzle() ([][]int, error) {
 				case <-ctx.Done():
 					return
 				default:
+					// Allows solutionsChan to be written to once
+					// Cancels other goroutines
 					once.Do(func() {
 						cancel()
 						solutionChan <- solution
@@ -172,6 +179,7 @@ func SolvePuzzle() ([][]int, error) {
 
 	}
 
+	// Waits for routine to finish, closes channel
 	wg.Wait()
 	close(solutionChan)
 	var solution [][]int
