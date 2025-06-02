@@ -47,28 +47,10 @@ func findMissingValues(puzzle [][]int, rowIndex, colIndex int) []int {
 
 	return validNumbers
 }
-func isSolved(puzzle [][]int) bool {
-	for i := 0; i < 9; i++ {
-		if !validateRow(puzzle, i, true) || !validateCol(puzzle, i, true) {
-			return false
-		}
-	}
-	for i := 0; i < 9; i += 3 {
-		for j := 0; j < 9; j += 3 {
-			if !validateSubGrid(puzzle, j, i, true) {
-				return false
-			}
-		}
-	}
-	return true
-}
 
 func recurseBacktrack(puzzle [][]int, row, col int) [][]int {
 	if row == 9 {
-		if isSolved(puzzle) {
-			return puzzle
-		}
-		return nil
+		return puzzle
 	}
 
 	nextRow, nextCol := row, col+1
@@ -167,6 +149,7 @@ func SolvePuzzle() ([][]int, error) {
 	for _, validValue := range validValues {
 		wg.Add(1)
 		go func(validValue int) {
+			defer wg.Done()
 			newPuzzle := make([][]int, 9)
 			for i := 0; i < 9; i++ {
 				newPuzzle[i] = make([]int, 9)
@@ -175,11 +158,16 @@ func SolvePuzzle() ([][]int, error) {
 			newPuzzle[firstZeroRow][firstZeroCol] = validValue
 			solution := recurseBacktrack(newPuzzle, nextRow, nextCol)
 			if solution != nil {
-				once.Do(func() {
-					solutionChan <- solution
-				})
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					once.Do(func() {
+						cancel()
+						solutionChan <- solution
+					})
+				}
 			}
-			wg.Done()
 		}(validValue)
 
 	}
@@ -193,13 +181,4 @@ func SolvePuzzle() ([][]int, error) {
 	case <-ctx.Done():
 		return nil, nil
 	}
-}
-
-func deepCopy(puzzle [][]int) [][]int {
-	copyPuzzle := make([][]int, 9)
-	for i := 0; i < 9; i++ {
-		copyPuzzle[i] = make([]int, 9)
-		copy(copyPuzzle[i], puzzle[i])
-	}
-	return copyPuzzle
 }
